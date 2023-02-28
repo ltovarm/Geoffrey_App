@@ -1,7 +1,7 @@
 package main
 
 import (
-	"query"
+	"github.com/ltovarm/Geoffrey_App/tree/GA-5-Query/BackEnd/internal/query/query"
 )
 
 func main() {
