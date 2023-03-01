@@ -14,7 +14,7 @@ type Database struct {
 }
 
 func NewDb() *Database {
-	return &Database{nil, "", nil}
+	return &Database{nil, ""}
 }
 
 func (db *Database) connect_to_database(user, pw, dbName string) error {
