@@ -11,24 +11,30 @@ import (
 type Database struct {
 	DB         *sql.DB
 	sqlStament string
-	Err        error
 }
 
-func (bd *Database) connect_to_database(user, pw, dbName string) {
+func NewDb() *Database {
+	return &Database{nil, "", nil}
+}
+
+func (db *Database) connect_to_database(user, pw, dbName string) error {
 	// Connect to database
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", user, pw, dbName)
 
-	bd.DB, bd.Err = sql.Open("postgres", connStr)
-	if bd.Err != nil {
-		panic(bd.Err)
+	var err error
+	db.DB, err = sql.Open("postgres", connStr)
+	if err != nil {
+		panic(err)
 	}
 
 	fmt.Printf("Connection to database %s successfully completed.", dbName)
 
-	defer bd.DB.Close()
+	defer db.DB.Close()
+
+	return nil
 }
 
-func (db Database) send_data(sqlTable string, parameters []string, values []string) (id int) {
+func (db *Database) send_data(sqlTable string, parameters []string, values []string) (id int) {
 
 	// Process parameters for staments in sql
 	myFormattedParameters := strings.Join(parameters, ", ")
@@ -41,9 +47,10 @@ func (db Database) send_data(sqlTable string, parameters []string, values []stri
 	VALUES (%s)
 	RETURNING id`, sqlTable, myFormattedParameters, myFormattedValues)
 
-	db.Err = db.DB.QueryRow(sqlStatement).Scan(&id)
-	if db.Err != nil {
-		panic(db.Err)
+	var err error
+	err = db.DB.QueryRow(sqlStatement).Scan(&id)
+	if err != nil {
+		panic(err)
 	}
 
 	fmt.Println("New record ID is:", id)
@@ -51,7 +58,7 @@ func (db Database) send_data(sqlTable string, parameters []string, values []stri
 	return id
 }
 
-func (db Database) get_all_data(parameters []string, sqlTable string) (row_output *sql.Rows, status int) {
+func (db *Database) get_all_data(parameters []string, sqlTable string) (row_output *sql.Rows, status int) {
 
 	myFormattedParameters := "*"
 	if parameters != nil {
@@ -60,9 +67,10 @@ func (db Database) get_all_data(parameters []string, sqlTable string) (row_outpu
 	sqlStatement := fmt.Sprintf("SELECT %s FROM %s", myFormattedParameters, sqlTable)
 
 	// get data from table
-	row_output, db.Err = db.DB.Query(sqlStatement)
-	if db.Err != nil {
-		panic(db.Err)
+	var err error
+	row_output, err = db.DB.Query(sqlStatement)
+	if err != nil {
+		panic(err)
 	}
 	defer row_output.Close()
 
