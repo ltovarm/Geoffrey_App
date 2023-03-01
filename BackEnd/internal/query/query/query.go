@@ -51,7 +51,7 @@ func (db Database) send_data(sqlTable string, parameters []string, values []stri
 	return id
 }
 
-func (db Database) get_all_data(parameters []string, sqlTable string) (row_output, status) {
+func (db Database) get_all_data(parameters []string, sqlTable string) (row_output *sql.Rows, status int) {
 
 	myFormattedParameters := "*"
 	if parameters != nil {
@@ -67,4 +67,5 @@ func (db Database) get_all_data(parameters []string, sqlTable string) (row_outpu
 	defer row_output.Close()
 
 	fmt.Println("Query successfully finished")
+	return row_output, status
 }
