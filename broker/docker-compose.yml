@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  # Create service with RabbitMQ.
+  broker:
+    image: rabbitmq:3-management
+    container_name: message-broker
+    ports:
+      - 5672:5672 # for sender and consumer connections
+      - 8080:15672 # for serve RabbitMQ GUI
+    volumes:
+      - ./rabbitmq/:/etc/rabbitmq/:ro
