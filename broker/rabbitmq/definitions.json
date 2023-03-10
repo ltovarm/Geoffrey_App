@@ -1,0 +1,51 @@
+{
+    "users": [
+        {
+        "name": "guest",
+        "password": "guest",
+        "tags": "administrator"
+        },
+        {
+            "name": "mqtt",
+            "password": "mqtt",
+            "tags": "management"
+        }
+    ],
+    "vhosts": [
+        {
+        "name": "/"
+        }
+    ],
+    "policies": [
+        {
+        "vhost": "/",
+        "name": "ha",
+        "pattern": "",
+        "apply-to": "all",
+        "definition": {
+            "ha-mode": "all",
+            "ha-sync-batch-size": 256,
+            "ha-sync-mode": "automatic"
+        },
+        "priority": 0
+        }
+    ],
+    "permissions": [
+        {
+            "user": "mqtt",
+            "vhost": "/",
+            "configure": ".*",
+            "write": ".*",
+            "read": ".*"
+        }
+    ],
+    "queues": [
+        {
+        "name": "mqtt",
+        "vhost": "/",
+        "durable": true,
+        "auto_delete": false,
+        "arguments": {}
+        }
+    ]
+}
