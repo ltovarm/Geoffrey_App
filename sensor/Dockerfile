@@ -17,4 +17,3 @@ WORKDIR /root/
 COPY --from=0 /src/sensor ./sensor
 
 CMD ["sensor"]
-#CMD [ "/go/bin/dlv", "--listen=:4000", "--headless=true", "--log=true", "--accept-multiclient", "--api-version=2", "exec", "/usr/local/bin/sensor" ]
