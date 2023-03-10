@@ -143,3 +143,33 @@ func (mqtt *Mosquitto) Disconnect() error {
 	}
 	return nil
 }
+
+func (mqtt *Mosquitto) LoopStart() error {
+	raw_err := int(C.mosquitto_loop_start(mqtt.data))
+	if raw_err != int(mosqErrSuccess) {
+		// TODO translate
+		return errors.New(fmt.Sprintf("Mosquitto lib returned code ", raw_err))
+	}
+	return nil
+}
+
+func (mqtt *Mosquitto) LoopStop(force bool) error {
+	raw_err := int(C.mosquitto_loop_stop(mqtt.data, C.bool(force)))
+	if raw_err != int(mosqErrSuccess) {
+		return errors.New(fmt.Sprintf("Mosquitto lib returned code ", raw_err))
+	}
+	return nil
+}
+
+func (mqtt *Mosquitto) Publish(topic string, payloadlen int, payload unsafe.Pointer, qos int, retain bool) (int, error) {
+	var mid C.int = 0
+
+	_topic := C.CString(topic)
+	defer C.free(unsafe.Pointer(_topic))
+
+	raw_err := int(C.mosquitto_publish(mqtt.data, &mid, _topic, C.int(payloadlen), payload, C.int(qos), C.bool(retain)))
+	if raw_err != int(mosqErrSuccess) {
+		return 0, errors.New(fmt.Sprintf("Mosquitto lib returned code ", raw_err))
+	}
+	return int(mid), nil
+}

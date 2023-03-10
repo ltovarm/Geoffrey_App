@@ -6,7 +6,8 @@ services:
     image: rabbitmq:3-management
     container_name: message-broker
     ports:
-      - 5672:5672 # for sender and consumer connections
-      - 8080:15672 # for serve RabbitMQ GUI
+      - "5672:5672" # for sender and consumer connections
+      - "1883:1883" # For MQTT
+      - "8080:15672" # for serve RabbitMQ GUI
     volumes:
       - ./rabbitmq/:/etc/rabbitmq/:ro
