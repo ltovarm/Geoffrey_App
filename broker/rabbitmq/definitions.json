@@ -16,20 +16,6 @@
         "name": "/"
         }
     ],
-    "policies": [
-        {
-        "vhost": "/",
-        "name": "ha",
-        "pattern": "",
-        "apply-to": "all",
-        "definition": {
-            "ha-mode": "all",
-            "ha-sync-batch-size": 256,
-            "ha-sync-mode": "automatic"
-        },
-        "priority": 0
-        }
-    ],
     "permissions": [
         {
             "user": "mqtt",

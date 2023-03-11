@@ -12,11 +12,11 @@ import (
 
 import "C"
 
-var temperature C.float = 1.0
+var temperature C.float = 0.0
 
 func sensorData() (int, unsafe.Pointer) {
 
-	temperature = C.float(rand.Float32())
+	temperature = C.float(10 + 20*rand.Float32())
 	return int(C.sizeof_float), unsafe.Pointer(&temperature)
 }
 
@@ -58,7 +58,7 @@ func main() {
 		payloadlen, payload := sensorData()
 		mid, err := mqtt.Publish("mqtt", payloadlen, payload, 2, false)
 		if err != nil {
-			log.Panic(err)
+			log.Print(err)
 		}
 		log.Print("Message ", mid, " has been published")
 		time.Sleep(1 * time.Second)
