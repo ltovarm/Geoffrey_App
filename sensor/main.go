@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"math/rand"
-	"net/url"
 	"time"
 	"unsafe"
 
@@ -12,38 +11,34 @@ import (
 
 import "C"
 
-var temperature C.float = 0.0
-
 func sensorData() (int, unsafe.Pointer) {
-
-	temperature = C.float(10 + 20*rand.Float32())
+	temperature := C.float(10 + 20*rand.Float32())
 	return int(C.sizeof_float), unsafe.Pointer(&temperature)
 }
 
 func main() {
+	sett := config()
+
 	err := mosquitto.LibInit()
 	if err != nil {
 		log.Panic(err)
 	}
 	defer mosquitto.LibCleanup()
 
-	mqtt, err := mosquitto.New("mqtt", true)
+	mqtt, err := mosquitto.New("", true)
 	if err != nil {
 		log.Panic(err)
 	}
 	defer mqtt.Destroy()
 
-	err = mqtt.UsernamePwSet("mqtt", "mqtt")
-	if err != nil {
-		log.Panic(err)
+	if len(sett.user) > 0 {
+		err = mqtt.UsernamePwSet(sett.user, sett.password)
+		if err != nil {
+			log.Panic(err)
+		}
 	}
 
-	u, err := url.Parse("http://host.docker.internal:1883")
-	if err != nil {
-		log.Panic(err)
-	}
-
-	err = mqtt.Connect(u, 10)
+	err = mqtt.Connect(sett.url, 10)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -56,11 +51,11 @@ func main() {
 
 	for {
 		payloadlen, payload := sensorData()
-		mid, err := mqtt.Publish("mqtt", payloadlen, payload, 2, false)
+		mid, err := mqtt.Publish(sett.topic, payloadlen, payload, 2, false)
 		if err != nil {
 			log.Print(err)
 		}
-		log.Print("Message ", mid, " has been published")
+		log.Printf("Message %v has been published", mid)
 		time.Sleep(1 * time.Second)
 	}
 }

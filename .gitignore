@@ -12,3 +12,5 @@ tmp/
 */*/*/dev-rabbitmq
 
 .vscode
+.devcontainer
+sensor

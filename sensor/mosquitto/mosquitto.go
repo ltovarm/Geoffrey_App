@@ -167,9 +167,14 @@ func (mqtt *Mosquitto) Publish(topic string, payloadlen int, payload unsafe.Poin
 	_topic := C.CString(topic)
 	defer C.free(unsafe.Pointer(_topic))
 
-	raw_err := int(C.mosquitto_publish(mqtt.data, &mid, _topic, C.int(payloadlen), payload, C.int(qos), C.bool(retain)))
-	if raw_err != int(mosqErrSuccess) {
-		return 0, errors.New(fmt.Sprintf("Mosquitto lib returned code ", raw_err))
+	raw_err, err := C.mosquitto_publish(mqtt.data, &mid, _topic, C.int(payloadlen), payload, C.int(qos), C.bool(retain))
+	if err != nil {
+		return 0, err
 	}
+	if raw_err != C.int(mosqErrSuccess) {
+		// TODO translate
+		return 0, errors.New(fmt.Sprintf("Mosquitto lib returned code ", int(raw_err)))
+	}
+
 	return int(mid), nil
 }
