@@ -38,7 +38,7 @@ func main() {
 		}
 	}
 
-	err = mqtt.Connect(sett.url, 10)
+	err = mqtt.Connect(sett.url, sett.port, 60)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -53,9 +53,10 @@ func main() {
 		payloadlen, payload := sensorData()
 		mid, err := mqtt.Publish(sett.topic, payloadlen, payload, 2, false)
 		if err != nil {
-			log.Print(err)
+			log.Panic(err)
+		} else {
+			log.Printf("Message %v has been published", mid)
 		}
-		log.Printf("Message %v has been published", mid)
 		time.Sleep(1 * time.Second)
 	}
 }

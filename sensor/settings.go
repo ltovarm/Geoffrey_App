@@ -2,21 +2,20 @@ package main
 
 import (
 	"flag"
-	"log"
-	"net/url"
 )
 
 type settings struct {
-	url      *url.URL
+	url      string
+	port     int
 	user     string
 	password string
 	topic    string
 }
 
 func settingsDefault() settings {
-	localhostUrl, _ := url.Parse("http://localhost:1883")
 	return settings{
-		url:      localhostUrl,
+		url:      "localhost",
+		port:     1883,
 		user:     "",
 		password: "",
 		topic:    "",
@@ -24,18 +23,12 @@ func settingsDefault() settings {
 }
 
 func settingsFlags(s *settings) {
-	var localhostUrl string
-	flag.StringVar(&localhostUrl, "host", s.url.String(), "MQTT host broker")
+	flag.IntVar(&s.port, "port", s.port, "MQTT port")
+	flag.StringVar(&s.url, "host", s.url, "MQTT host broker")
 	flag.StringVar(&s.user, "user", s.user, "MQTT broker user")
 	flag.StringVar(&s.password, "password", s.password, "MQTT broker password")
 	flag.StringVar(&s.topic, "topic", s.topic, "MQTT topic")
 	flag.Parse()
-
-	urlHost, err := url.Parse(localhostUrl)
-	if err != nil {
-		log.Panic(err)
-	}
-	s.url = urlHost
 }
 
 func config() settings {

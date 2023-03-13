@@ -13,8 +13,9 @@ RUN go build -v .
 
 FROM alpine:latest
 RUN apk --no-cache add mosquitto
+
 WORKDIR /root/
 COPY --from=0 /src/sensor ./sensor
 
 ENTRYPOINT [ "./sensor" ]
-CMD ["-user", "mqtt", "-password", "mqtt", "-host", "http://host.docker.internal:1883"]
+CMD ["-user", "mqtt", "-password", "mqtt", "-host", "host.docker.internal"]

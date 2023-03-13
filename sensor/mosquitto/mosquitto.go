@@ -1,17 +1,29 @@
+// / mosquitto V3.1.1 of MQTT protocol
 package mosquitto // https://mosquitto.org/api/files/mosquitto-h.html
 
 import (
 	"errors"
 	"fmt"
-	"net/url"
-	"strconv"
 	"unsafe"
 )
 
 // #cgo LDFLAGS: -lmosquitto
 // #include <mosquitto.h>
 // #include <stdlib.h>
+/*
+extern void publishCallbackFunc(struct mosquitto* mqtt, void* p, int mid);
+static inline void cgo_publish_callback_wrapper(struct mosquitto* inst, void* p, int mid) {
+	publishCallbackFunc(inst, p, mid);
+}
+*/
 import "C"
+
+// export publishCallbackFunc
+func publishCallbackFunc(mqtt *C.struct_mosquitto, p unsafe.Pointer, mid int) {
+	_publishCallbackFunc(Mosquitto{instance: mqtt}, p, mid)
+}
+
+var _publishCallbackFunc func(Mosquitto, unsafe.Pointer, int)
 
 type mosqErrT int8
 
@@ -59,7 +71,11 @@ const (
 )
 
 type Mosquitto struct {
-	data *C.struct_mosquitto
+	instance *C.struct_mosquitto
+}
+
+func Strerror(mqtt_errno int) string {
+	return C.GoString(C.mosquitto_strerror(C.int(mqtt_errno)))
 }
 
 // / MosquittoLibInit Required before calling other mosquitto functions
@@ -87,11 +103,11 @@ func New(id string, clean_session bool) (Mosquitto, error) {
 		return Mosquitto{}, err
 	}
 
-	return Mosquitto{data: mqtt_client}, nil
+	return Mosquitto{instance: mqtt_client}, nil
 }
 
 func (mqtt *Mosquitto) Destroy() {
-	C.mosquitto_destroy(mqtt.data)
+	C.mosquitto_destroy(mqtt.instance)
 }
 
 func (mqtt *Mosquitto) UsernamePwSet(user string, password string) error {
@@ -101,62 +117,56 @@ func (mqtt *Mosquitto) UsernamePwSet(user string, password string) error {
 	_password := C.CString(password)
 	defer C.free(unsafe.Pointer(_password))
 
-	raw_err, err := C.mosquitto_username_pw_set(mqtt.data, _user, _password)
+	raw_err, err := C.mosquitto_username_pw_set(mqtt.instance, _user, _password)
 	if err != nil {
 		return err
 	}
 	if raw_err != C.int(mosqErrSuccess) {
-		return errors.New(fmt.Sprintf("Mosquitto lib returned code ", int(raw_err)))
+		return errors.New(fmt.Sprint("Mosquitto error: ", Strerror(int(raw_err))))
 	}
 
 	return nil
 }
 
 // TODO context?
-func (mqtt *Mosquitto) Connect(host *url.URL, keepalive int) error {
-
-	port, err := strconv.Atoi(host.Port())
-	if err != nil {
-		return err
-	}
-
-	_host := C.CString(host.Hostname())
+func (mqtt *Mosquitto) Connect(host string, port int, keepalive int) error {
+	_host := C.CString(host)
 	defer C.free(unsafe.Pointer(_host))
 
-	raw_err, err := C.mosquitto_connect(mqtt.data, _host, C.int(port), C.int(keepalive))
+	raw_err, err := C.mosquitto_connect(mqtt.instance, _host, C.int(port), C.int(keepalive))
 	if err != nil {
 		return err
 	}
 	if raw_err != C.int(mosqErrSuccess) {
 		// TODO translate
-		return errors.New(fmt.Sprintf("Mosquitto lib returned code ", int(raw_err)))
+		return errors.New(fmt.Sprint("Mosquitto error: ", Strerror(int(raw_err))))
 	}
 
 	return nil
 }
 
 func (mqtt *Mosquitto) Disconnect() error {
-	raw_err := int(C.mosquitto_disconnect(mqtt.data))
+	raw_err := int(C.mosquitto_disconnect(mqtt.instance))
 	if raw_err != int(mosqErrSuccess) {
 		// TODO translate
-		return errors.New(fmt.Sprintf("Mosquitto lib returned code ", raw_err))
+		return errors.New(fmt.Sprint("Mosquitto error: ", Strerror(int(raw_err))))
 	}
 	return nil
 }
 
 func (mqtt *Mosquitto) LoopStart() error {
-	raw_err := int(C.mosquitto_loop_start(mqtt.data))
+	raw_err := int(C.mosquitto_loop_start(mqtt.instance))
 	if raw_err != int(mosqErrSuccess) {
 		// TODO translate
-		return errors.New(fmt.Sprintf("Mosquitto lib returned code ", raw_err))
+		return errors.New(fmt.Sprint("Mosquitto error: ", Strerror(int(raw_err))))
 	}
 	return nil
 }
 
 func (mqtt *Mosquitto) LoopStop(force bool) error {
-	raw_err := int(C.mosquitto_loop_stop(mqtt.data, C.bool(force)))
+	raw_err := int(C.mosquitto_loop_stop(mqtt.instance, C.bool(force)))
 	if raw_err != int(mosqErrSuccess) {
-		return errors.New(fmt.Sprintf("Mosquitto lib returned code ", raw_err))
+		return errors.New(fmt.Sprintf("Mosquitto error: ", Strerror(int(raw_err))))
 	}
 	return nil
 }
@@ -167,14 +177,20 @@ func (mqtt *Mosquitto) Publish(topic string, payloadlen int, payload unsafe.Poin
 	_topic := C.CString(topic)
 	defer C.free(unsafe.Pointer(_topic))
 
-	raw_err, err := C.mosquitto_publish(mqtt.data, &mid, _topic, C.int(payloadlen), payload, C.int(qos), C.bool(retain))
+	raw_err, err := C.mosquitto_publish(mqtt.instance, &mid, _topic, C.int(payloadlen), payload, C.int(qos), C.bool(retain))
 	if err != nil {
 		return 0, err
 	}
 	if raw_err != C.int(mosqErrSuccess) {
 		// TODO translate
-		return 0, errors.New(fmt.Sprintf("Mosquitto lib returned code ", int(raw_err)))
+		return 0, errors.New(fmt.Sprint("Mosquitto error: ", Strerror(int(raw_err))))
 	}
 
 	return int(mid), nil
+}
+
+// PublishCallbackSet set a go callback function to be called when funciton back
+func (mqtt *Mosquitto) PublishCallbackSet(callback func(Mosquitto, unsafe.Pointer, int)) {
+	_publishCallbackFunc = callback
+	C.mosquitto_publish_callback_set(mqtt.instance, (*[0]byte)(C.cgo_publish_callback_wrapper))
 }
