@@ -41,7 +41,7 @@ func main() {
 	mqtt.ConnectCallbackSet(func(m mosquitto.Mosquitto, p unsafe.Pointer, mid int) {})
 	mqtt.PublishCallbackSet(func(m mosquitto.Mosquitto, p unsafe.Pointer, mid int) {})
 
-	err = mqtt.Connect(sett.url, sett.port, 60)
+	err = mqtt.Connect(sett.url, sett.port, sett.keepalive)
 	if err != nil {
 		log.Panic(err)
 	}

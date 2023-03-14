@@ -4,7 +4,6 @@ services:
   # Create service with RabbitMQ.
   broker:
     image: rabbitmq:3-management
-    container_name: message-broker
     ports:
       - "5672:5672"
       - "1883:1883" # For MQTT

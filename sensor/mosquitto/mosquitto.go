@@ -154,9 +154,49 @@ func (mqtt *Mosquitto) Connect(host string, port int, keepalive int) error {
 	return nil
 }
 
+func (mqtt *Mosquitto) ConnectAsync(host string, port int, keepalive int) error {
+	_host := C.CString(host)
+	defer C.free(unsafe.Pointer(_host))
+
+	raw_err, err := C.mosquitto_connect_async(mqtt.instance, _host, C.int(port), C.int(keepalive))
+	if err != nil {
+		return err
+	}
+	if raw_err != C.int(mosqErrSuccess) {
+		// TODO translate
+		return errors.New(fmt.Sprint("Mosquitto error: ", Strerror(int(raw_err))))
+	}
+
+	return nil
+}
+
 func (mqtt *Mosquitto) Disconnect() error {
 	raw_err := int(C.mosquitto_disconnect(mqtt.instance))
 	if raw_err != int(mosqErrSuccess) {
+		// TODO translate
+		return errors.New(fmt.Sprint("Mosquitto error: ", Strerror(int(raw_err))))
+	}
+	return nil
+}
+
+func (mqtt *Mosquitto) Loop(timeout int) error {
+	raw_err, err := C.mosquitto_loop(mqtt.instance, C.int(timeout), 1)
+	if err != nil {
+		return err
+	}
+	if int(raw_err) != int(mosqErrSuccess) {
+		// TODO translate
+		return errors.New(fmt.Sprint("Mosquitto error: ", Strerror(int(raw_err))))
+	}
+	return nil
+}
+
+func (mqtt *Mosquitto) LoopForever(timeout int) error {
+	raw_err, err := C.mosquitto_loop_forever(mqtt.instance, C.int(timeout), 1)
+	if err != nil {
+		return err
+	}
+	if int(raw_err) != int(mosqErrSuccess) {
 		// TODO translate
 		return errors.New(fmt.Sprint("Mosquitto error: ", Strerror(int(raw_err))))
 	}
