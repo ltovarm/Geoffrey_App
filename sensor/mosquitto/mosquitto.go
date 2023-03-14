@@ -7,23 +7,28 @@ import (
 	"unsafe"
 )
 
-// #cgo LDFLAGS: -lmosquitto
-// #include <mosquitto.h>
-// #include <stdlib.h>
 /*
-extern void publishCallbackFunc(struct mosquitto* mqtt, void* p, int mid);
-static inline void cgo_publish_callback_wrapper(struct mosquitto* inst, void* p, int mid) {
-	publishCallbackFunc(inst, p, mid);
-}
+#cgo CFLAGS: -I .
+#cgo LDFLAGS: -lmosquitto
+#include <mosquitto.h>
+#include <stdlib.h>
+
+#include "clibrary.h"
+
+void publish_callback_wrapper_cgo(struct mosquitto* inst, void* p, int mid);
+void connect_callback_wrapper_cgo(struct mosquitto* inst, void* p, int mid);
 */
 import "C"
 
-// export publishCallbackFunc
-func publishCallbackFunc(mqtt *C.struct_mosquitto, p unsafe.Pointer, mid int) {
-	_publishCallbackFunc(Mosquitto{instance: mqtt}, p, mid)
+//export publish_callback_wrapper
+func publish_callback_wrapper(mosq *C.struct_mosquitto, p unsafe.Pointer, mid int) {
+	fmt.Printf("Go.callOnMeGo(): called with arg = %d\n", mid)
 }
 
-var _publishCallbackFunc func(Mosquitto, unsafe.Pointer, int)
+//export connect_callback_wrapper
+func connect_callback_wrapper(mosq *C.struct_mosquitto, p unsafe.Pointer, mid int) {
+	fmt.Printf("Mosquitto client connected. mid = %d\n", mid)
+}
 
 type mosqErrT int8
 
@@ -72,6 +77,10 @@ const (
 
 type Mosquitto struct {
 	instance *C.struct_mosquitto
+}
+
+func ConnackString(conn_code int) string {
+	return C.GoString(C.mosquitto_connack_string(C.int(conn_code)))
 }
 
 func Strerror(mqtt_errno int) string {
@@ -189,8 +198,14 @@ func (mqtt *Mosquitto) Publish(topic string, payloadlen int, payload unsafe.Poin
 	return int(mid), nil
 }
 
-// PublishCallbackSet set a go callback function to be called when funciton back
+// PublishCallbackSet
 func (mqtt *Mosquitto) PublishCallbackSet(callback func(Mosquitto, unsafe.Pointer, int)) {
-	_publishCallbackFunc = callback
-	C.mosquitto_publish_callback_set(mqtt.instance, (*[0]byte)(C.cgo_publish_callback_wrapper))
+	//_publishCallbackFunc = callback
+	C.mosquitto_publish_callback_set(mqtt.instance, (C.publish_callback_fcn)(unsafe.Pointer(C.publish_callback_wrapper_cgo)))
+}
+
+// PublishCallbackSet
+func (mqtt *Mosquitto) ConnectCallbackSet(callback func(Mosquitto, unsafe.Pointer, int)) {
+	//_publishCallbackFunc = callback
+	C.mosquitto_connect_callback_set(mqtt.instance, (C.connect_callback_fcn)(unsafe.Pointer(C.connect_callback_wrapper_cgo)))
 }
