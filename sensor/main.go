@@ -54,7 +54,7 @@ func main() {
 
 	for {
 		payloadlen, payload := sensorData()
-		mid, err := mqtt.Publish(sett.topic, payloadlen, payload, 2, false)
+		mid, err := mqtt.Publish(sett.topic, payloadlen, payload, 1, false)
 		if err != nil {
 			log.Panic(err)
 		} else {
