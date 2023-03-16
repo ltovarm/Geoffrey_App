@@ -18,4 +18,4 @@ WORKDIR /root/
 COPY --from=0 /src/sensor ./sensor
 
 ENTRYPOINT [ "./sensor" ]
-CMD ["-user", "mqtt", "-password", "mqtt", "-host", "host.docker.internal", "-topic", "example/sensor"]
+CMD ["-user", "mqtt", "-password", "mqtt", "-host", "host.docker.internal", "-topic", "mqtt"]

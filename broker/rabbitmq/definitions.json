@@ -33,5 +33,15 @@
         "auto_delete": false,
         "arguments": {}
         }
+    ],
+    "bindings": [
+        {
+        "source": "amq.topic",
+        "vhost": "/",
+        "destination": "mqtt",
+        "destination_type": "queue",
+        "routing_key": "mqtt",
+        "arguments": {}
+        }
     ]
 }
