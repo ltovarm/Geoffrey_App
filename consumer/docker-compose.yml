@@ -1,0 +1,7 @@
+version: "3.9"
+
+services:
+  # Create service with RabbitMQ.
+  consumer:
+    image: consumer:latest
+    build: .

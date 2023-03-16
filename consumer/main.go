@@ -1,64 +1,63 @@
 package main
 
 import (
-	"flag"
+	"encoding/binary"
 	"log"
-	"os"
+	"math"
 
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type settings struct {
-	brokerHost string
-	queue      string
+func Float32frombytes(bytes []byte) float32 {
+	bits := binary.LittleEndian.Uint32(bytes)
+	float := math.Float32frombits(bits)
+	return float
+}
+
+func failOnError(err error, msg string) {
+	if err != nil {
+		log.Panicf("%s: %s", msg, err)
+	}
 }
 
 func main() {
+	conn, err := amqp.Dial("amqp://mqtt:mqtt@host.docker.internal:5672/")
+	failOnError(err, "Failed to connect to RabbitMQ")
+	defer conn.Close()
 
-	var sett settings
-	flag.StringVar(&sett.brokerHost, "broker", os.Getenv("AMQP_SERVER_URL"), "Broker host")
-	flag.StringVar(&sett.queue, "queue", "mqtt", "Queue")
-	flag.Parse()
+	ch, err := conn.Channel()
+	failOnError(err, "Failed to open a channel")
+	defer ch.Close()
 
-	// Create a new RabbitMQ connection.
-	connectRabbitMQ, err := amqp.Dial(sett.brokerHost)
-	if err != nil {
-		panic(err)
-	}
-	defer connectRabbitMQ.Close()
-
-	// Opening a channel to our RabbitMQ instance over
-	// the connection we have already established.
-	channelRabbitMQ, err := connectRabbitMQ.Channel()
-	if err != nil {
-		panic(err)
-	}
-	defer channelRabbitMQ.Close()
-
-	// Subscribing to QueueService1 for getting messages.
-	messages, err := channelRabbitMQ.Consume(
-		sett.queue, // queue name
-		"",         // consumer
-		true,       // auto-ack
-		false,      // exclusive
-		false,      // no local
-		false,      // no wait
-		nil,        // arguments
+	q, err := ch.QueueDeclare(
+		"mqtt", // name
+		true,   // durable
+		false,  // delete when unused
+		false,  // exclusive
+		false,  // no-wait
+		nil,    // arguments
 	)
-	if err != nil {
-		log.Println(err)
-	}
+	failOnError(err, "Failed to declare a queue")
 
-	// Make a channel to receive messages into infinite loop.
-	forever := make(chan bool)
+	msgs, err := ch.Consume(
+		q.Name, // queue
+		"",     // consumer
+		true,   // auto-ack
+		false,  // exclusive
+		false,  // no-local
+		false,  // no-wait
+		nil,    // args
+	)
+	failOnError(err, "Failed to register a consumer")
+
+	var forever chan struct{}
 
 	go func() {
-		for message := range messages {
-			// For example, show received message in a console.
-			// TO-DO: Sender the data to process data container
-			log.Printf(" > Received message: %s\n", message.Body)
+		for d := range msgs {
+			log.Printf("Received a message: %f", Float32frombytes(d.Body))
 		}
 	}()
 
+	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 	<-forever
 }
