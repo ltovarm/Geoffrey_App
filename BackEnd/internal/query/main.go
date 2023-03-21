@@ -1,15 +1,19 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/ltovarm/Geoffrey_App/tree/GA-5-Query/BackEnd/internal/query/query"
+	"github.com/ltovarm/Geoffrey_App/BackEnd/internal/queries/query"
 )
 
 func main() {
 
 	my_db := query.NewDb()
-	my_db.connect_to_database("postgres", "mysecretpassword", "temp")
+	if err := my_db.connect_to_database("postgres", "mysecretpassword", "temp"); err != nil {
+		fmt.Print("Error connecting to db: %v", err)
+		return
+	}
 	sqlTable := "temperature"
 	temp := 25.25
 	t := time.Now()

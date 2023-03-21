@@ -10,11 +10,11 @@ import (
 
 type Database struct {
 	DB         *sql.DB
-	sqlStament string
+	sqlStament *string
 }
 
 func NewDb() *Database {
-	return &Database{nil, ""}
+	return &Database{nil, nil}
 }
 
 func (db *Database) connect_to_database(user, pw, dbName string) error {
@@ -31,7 +31,7 @@ func (db *Database) connect_to_database(user, pw, dbName string) error {
 
 	defer db.DB.Close()
 
-	return nil
+	return err
 }
 
 func (db *Database) send_data(sqlTable string, parameters []string, values []string) (id int) {

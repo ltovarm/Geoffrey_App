@@ -1,4 +1,4 @@
-module github.com/ltovarm/Geoffrey_App/tree/GA-5-Query/BackEnd/internal/query
+module github.com/ltovarm/Geoffrey_App/BackEnd/internal/query
 
 go 1.18
 
