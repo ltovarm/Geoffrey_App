@@ -18,7 +18,12 @@ int main(){
         std::cerr << "Error abriendo la conexión TCP." << std::endl;
         return 1;
     }
-    amqp_login(conn, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, "guest", "guest");
+    amqp_rpc_reply_t login_reply = amqp_login(conn, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, "guest", "guest");
+    if (login_reply.reply_type != AMQP_RESPONSE_NORMAL) {
+        std::cerr << "Error al iniciar sesión en RabbitMQ" << std::endl;
+        std::cerr << "Error: " << login_reply.reply_type << std::endl;
+        return 1;
+    }
     amqp_channel_open(conn, 1);
 
     // Crear una cola y un intercambio en RabbitMQ

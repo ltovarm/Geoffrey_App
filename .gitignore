@@ -10,3 +10,5 @@ tmp/
 
 # Docker volumes
 */*/*/dev-rabbitmq
+
+BackEnd/internal/queue/bld/
