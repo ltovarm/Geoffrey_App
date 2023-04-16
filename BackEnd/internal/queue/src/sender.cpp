@@ -1,18 +1,42 @@
-#include <amqp.h>
-#include <amqp_tcp_socket.h>
-#include <amqp_framing.h>
-#include <iostream>
-#include <string>
+#include <queuermq.hpp>
+#include <unistd.h> 
 
 const std::string QUEUE_NAME = "QueueService1";
 
+
+int main(){
+
+    std::cout << "Empezamos..." << std::endl;
+    QueueRMQ qrmq(Publisher, QUEUE_NAME.c_str(), NULL, 0, NULL, NULL, NULL);
+    if(int ret = qrmq.InitQueue()){
+        std::cout << "Error iniciando queue: " << std::to_string(ret) << std::endl;
+        return -1;
+    }
+
+    for (int i = 0; i < 100000000; ++i){
+        if (int ret = qrmq.Queue(std::to_string(i))){
+            std::cout << "Error encolando: " << std::to_string(ret) << std::endl;
+            return -1;
+        }
+        std::cout << "Encolando con exito: " << std::to_string(i) << std::endl;
+        sleep(3);
+    }
+
+    qrmq.CloseQueue();
+    
+    return EXIT_SUCCESS;
+}
+
+/*
 int main() {
     
     // Establecer la conexión
     amqp_connection_state_t conn = amqp_new_connection();
     amqp_socket_t* socket = amqp_tcp_socket_new(conn);
-    int sockfd = amqp_socket_open(socket, "localhost", 5672);
-    amqp_tcp_socket_set_sockfd(socket, sockfd);
+    if (amqp_socket_open(socket, "localhost", 5672)) {
+        std::cerr << "Error abriendo la conexión TCP." << std::endl;
+        return 1;
+    }
 
     // Iniciar sesión en RabbitMQ
     amqp_rpc_reply_t login_reply = amqp_login(conn, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, "guest", "guest");
@@ -30,11 +54,12 @@ int main() {
     }
 
     // Declarar la cola
-    amqp_queue_declare_ok_t* queue_declare_ok = amqp_queue_declare(conn, 1, amqp_cstring_bytes(QUEUE_NAME.c_str()), 0, 0, 0, 1, amqp_empty_table);
-    if (queue_declare_ok == NULL) {
-        std::cerr << "Error al crear una cola en RabbitMQ" << std::endl;
-        return 1;
-    }
+    // amqp_queue_declare_ok_t* queue_declare_ok = amqp_queue_declare(conn, 1, amqp_cstring_bytes(QUEUE_NAME.c_str()), 0, 0, 0, 1, amqp_empty_table);
+    // amqp_queue_declare_ok_t* queue_declare_ok = amqp_queue_declare(conn, 1, amqp_cstring_bytes("QueueService1"), 0, 0, 0, 1, amqp_empty_table);
+    // if (queue_declare_ok == NULL) {
+    //     std::cerr << "Error al crear una cola en RabbitMQ" << std::endl;
+    //     return 1;
+    // }
 
     // Publicar un mensaje con un valor float en la cola
     amqp_basic_properties_t props;
@@ -42,7 +67,8 @@ int main() {
     props.content_type = amqp_cstring_bytes("application/octet-stream");
     props.delivery_mode = 2;
     float temp = 25.5;
-    amqp_bytes_t message_bytes = amqp_cstring_bytes(reinterpret_cast<const char*>(&temp));
+    // amqp_bytes_t message_bytes = amqp_cstring_bytes(reinterpret_cast<const char*>(&temp));
+    amqp_bytes_t message_bytes = amqp_cstring_bytes("esto es una prueba");
     amqp_basic_publish(conn, 1, amqp_empty_bytes, amqp_cstring_bytes("QueueService1"), 0, 0, &props, message_bytes);
     amqp_rpc_reply_t publish_reply = amqp_get_rpc_reply(conn);
     if (publish_reply.reply_type != AMQP_RESPONSE_NORMAL) {
@@ -57,3 +83,4 @@ int main() {
     
     return 0;
 }
+*/

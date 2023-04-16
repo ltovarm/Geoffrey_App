@@ -7,41 +7,42 @@
 # 	docker-compose down
 
 CC=g++
-CFLAGS=-Wall -Wextra -I /usr/include
-LDFLAGS=-L/usr/lib/x86_64-linux-gnu -lrabbitmq
+CFLAGS=-Wall -fPIC
+SRCDIR := src
+LIBDIR := lib
 OBJDIR:=obj
 BUILDDIR:=bld
-SENDER_SRCDIR := sender
-SENDER_OBJDIR := $(OBJDIR)/sender
-CONSUMER_OBJDIR := $(OBJDIR)/consumer
-CONSUMER_SRCDIR := consumer
-SENDER_SOURCES=$(SENDER_SRCDIR)/sender.cpp
-CONSUMER_SOURCES=$(CONSUMER_SRCDIR)/consumer.cpp
-SENDER_OBJECTS=$(SENDER_SOURCES:%.cpp=$(OBJDIR)/%.o)
-CONSUMER_OBJECTS=$(CONSUMER_SOURCES:%.cpp=$(OBJDIR)/%.o)
-SENDER_EXECUTABLE=sender_program
-CONSUMER_EXECUTABLE=consumer_program
+EXECUTABLES=$(SOURCES:$(SRCDIR)/%.cpp=$(BUILDDIR)/%)
+INCLUDE := -I/home/ltovar/workspace/Geoffrey_App/BackEnd/internal/queue/lib -L/home/ltovar/workspace/Geoffrey_App/BackEnd/internal/queue/lib -lqueuermq
+SOURCES=$(wildcard $(SRCDIR)/*.cpp)
+OBJECTS=$(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
+LIBRARIES=$(wildcard $(LIBDIR)/*.cpp)
+LIBOBJECTS=$(LIBRARIES:%.cpp=%.o)
+TARGET_LIB = $(LIBDIR)/lib$(notdir $(LIBRARIES:%.cpp=%.so))
+LDFLAGS=-shared -Wl,-soname,lib$(notdir $(LIBRARIES:%.cpp=%.so))
+LDRABBIT=-L/usr/lib/x86_64-linux-gnu -lrabbitmq
 
-build: create_dir $(SENDER_SOURCES) $(CONSUMER_SOURCES) $(SENDER_EXECUTABLE) $(CONSUMER_EXECUTABLE) clean_object
+# .PHONY: all 
+# all:
+# 	echo "--->($(EXECUTABLES))"
 
-create_dir:
-	@echo "Creando directorios $(CONSUMER_OBJDIR) y $(SENDER_OBJDIR)..."
-	mkdir -p $(CONSUMER_OBJDIR) $(SENDER_OBJDIR)
+build: create_dirs $(LIBOBJECTS) $(TARGET_LIB) $(EXECUTABLES) clean
+create_dirs:
+	@echo "Creating directories..."
+	mkdir -p $(OBJDIR)
+	mkdir -p $(LIBDIR)
 	mkdir -p $(BUILDDIR)
 
-$(SENDER_EXECUTABLE): $(SENDER_OBJECTS)
-	$(CC) $(SENDER_OBJECTS) -o ${BUILDDIR}/$@ $(LDFLAGS)
 
-$(CONSUMER_EXECUTABLE): $(CONSUMER_OBJECTS)
-	$(CC) $(CONSUMER_OBJECTS) -o ${BUILDDIR}/$@ $(LDFLAGS)
-
-$(SENDER_OBJDIR)/%.o: $(SENDER_SRCDIR)/%.cpp
+$(LIBOBJECTS): $(LIBRARIES)
 	$(CC) $(CFLAGS) -c $< -o $@
-
-$(CONSUMER_OBJDIR)/%.o: $(CONSUMER_SRCDIR)/%.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
-
+$(TARGET_LIB): $(LIBOBJECTS)
+	$(CC) $(LDFLAGS) -o $@ $< $(LDRABBIT)
+$(OBJECTS): $(SOURCES)
+	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
+$(EXECUTABLES): $(BUILDDIR)/% : $(SRCDIR)/%.cpp
+	$(CC) $(CFLAGS) -o $@ $< $(INCLUDE)
 clean_object:
 	rm -rf $(OBJDIR)
 clean:
-	rm -f $(SENDER_EXECUTABLE)$(CONSUMER_EXECUTABLE)
+	rm -rf $(OBJDIR) $(LIBDIR)/*.o
