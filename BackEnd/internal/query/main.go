@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ltovarm/Geoffrey_App/BackEnd/internal/queries/query"
+	query "github.com/ltovarm/Geoffrey_App/BackEnd/internal/query/queries"
 )
 
 func main() {
 
 	my_db := query.NewDb()
-	if err := my_db.connect_to_database("postgres", "mysecretpassword", "temp"); err != nil {
-		fmt.Print("Error connecting to db: %v", err)
+	if err := my_db.Connect_to_database("postgres", "mysecretpassword", "temp"); err != nil {
+		fmt.Printf("Error connecting to db: %v\n", err)
 		return
 	}
 	sqlTable := "temperature"
@@ -20,8 +20,7 @@ func main() {
 	formattedTime := t.Format("2006-01-02 15:04:05")
 	var parameters [2]string
 	parameters = [2]string{"temperature", "date"}
-	var values [2]interface{}
-	values[0] = temp
-	values[1] = formattedTime
-	my_db.send_data(sqlTable, parameters, values)
+
+	values := [2]string{fmt.Sprintf("%f", temp), formattedTime}
+	my_db.Send_data(sqlTable, parameters[:], values[:])
 }

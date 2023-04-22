@@ -17,7 +17,7 @@ func NewDb() *Database {
 	return &Database{nil, nil}
 }
 
-func (db *Database) connect_to_database(user, pw, dbName string) error {
+func (db *Database) Connect_to_database(user, pw, dbName string) error {
 	// Connect to database
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", user, pw, dbName)
 
@@ -34,7 +34,7 @@ func (db *Database) connect_to_database(user, pw, dbName string) error {
 	return err
 }
 
-func (db *Database) send_data(sqlTable string, parameters []string, values []string) (id int) {
+func (db *Database) Send_data(sqlTable string, parameters []string, values []string) (id int) {
 
 	// Process parameters for staments in sql
 	myFormattedParameters := strings.Join(parameters, ", ")
@@ -47,8 +47,7 @@ func (db *Database) send_data(sqlTable string, parameters []string, values []str
 	VALUES (%s)
 	RETURNING id`, sqlTable, myFormattedParameters, myFormattedValues)
 
-	var err error
-	err = db.DB.QueryRow(sqlStatement).Scan(&id)
+	err := db.DB.QueryRow(sqlStatement).Scan(&id)
 	if err != nil {
 		panic(err)
 	}
