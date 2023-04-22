@@ -6,7 +6,6 @@ Makefile
 LICENSE
 **/*.yml
 **/*.md
-**/*_test.go
 
 # Folders
 build/

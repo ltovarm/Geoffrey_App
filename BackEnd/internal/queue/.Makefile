@@ -12,7 +12,7 @@ LIBDIR = $(WSDIR)/lib
 OBJDIR = $(WSDIR)/obj
 BUILDDIR = $(WSDIR)/bld
 EXECUTABLES=$(SOURCES:$(SRCDIR)/%.cpp=$(BUILDDIR)/%)
-INCLUDE := -I$(WSDIR)/lib -L$(WSDIR)/rlib -lqueuermq
+INCLUDE := -I$(WSDIR)/lib -L$(WSDIR)/lib -lqueuermq
 SOURCES=$(wildcard $(SRCDIR)/*.cpp)
 OBJECTS=$(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 LIBRARIES=$(wildcard $(LIBDIR)/*.cpp)

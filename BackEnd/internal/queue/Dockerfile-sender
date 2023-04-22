@@ -1,30 +1,22 @@
-FROM golang:1.20-alpine AS builder
+FROM ubuntu:latest AS builder
 
 # Move to working directory (/build).
-WORKDIR /build
+WORKDIR /app
+
+# Install compiler and rabbitmq
+RUN apt-get update && \
+    apt-get -y install build-essential && \
+    apt-get -y install librabbitmq-dev
 
 # Copy and download dependency using go mod.
-COPY go.mod go.sum ./
-RUN go mod download
+COPY . /app
 
-# Copy the code into the container.
-COPY ./sender/main.go .
+# Set necessary environment variables needed for our image and build the consumer.
+ENV RABBITMQPATH=/usr/include:/usr/lib
+ENV LD_LIBRARY_PATH=$RABBITMQPATH:"/usr/local/lib":"/app/lib"
+RUN  cd /app && cp .Makefile Makefile && make build
 
-# Set necessary environment variables needed for our image and build the sender.
-ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
-#-ldflags '[pattern=]arg list' arguments to pass on each go tool link invocation.
-# La opción -s elimina los símbolos de depuración del archivo binario, lo que hace que el archivo sea más pequeño.
-# La opción -w elimina información de depuración adicional, como la información de la tabla de símbolos,
-# lo que también reduce el tamaño del archivo binario.
-# En general, se recomienda usar estas opciones cuando se compila un archivo binario para producción.
-# Sin embargo, es posible que desees omitirlas si estás compilando el archivo binario
-# para fines de depuración o si necesitas la información de depuración para alguna otra tarea.
-RUN go build -ldflags="-s -w" -o sender .
-
-FROM scratch
-
-# Copy binary and config files from /build to root folder of scratch container.
-COPY --from=builder ["/build/sender", "/"]
+# FROM scratch
 
 # Command to run when starting the container.
-ENTRYPOINT ["/sender"]
+ENTRYPOINT ["/app/bld//sender"]
