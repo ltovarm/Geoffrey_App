@@ -1,0 +1,12 @@
+# Dev build
+build/
+tmp/
+
+# Test
+*.out
+
+# Environment variables
+.env
+
+# Docker volumes
+*/*/*/dev-rabbitmq
