@@ -1,11 +1,37 @@
 package main
 
 import (
+	"database/sql"
+	"encoding/json"
 	"log"
 	"os"
 
+	_ "github.com/lib/pq"
 	"github.com/streadway/amqp"
 )
+
+func insertJsonToTable(data map[string]interface{}) {
+
+	sqlServerURL := os.Getenv("DATABASE_URL")
+	log.Println("sqlServerURL: %s", sqlServerURL)
+	// Set-up connection
+	db, err := sql.Open("postgres", sqlServerURL)
+	if err != nil {
+		log.Fatalf("Database connection error: %s", err)
+	}
+	defer db.Close()
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		log.Fatalf("Error when serializing the Json: %s", err)
+	}
+
+	// Insert into table
+	_, err = db.Exec("INSERT INTO temperatures (data) VALUES ($1)", jsonData)
+	if err != nil {
+		log.Fatalf("Error inserting into table: %s", err)
+	}
+}
 
 func main() {
 	// Define RabbitMQ server URL.
@@ -18,42 +44,52 @@ func main() {
 	}
 	defer connectRabbitMQ.Close()
 
-	// Opening a channel to our RabbitMQ instance over
-	// the connection we have already established.
+	// Configuración del canal
 	channelRabbitMQ, err := connectRabbitMQ.Channel()
 	if err != nil {
-		panic(err)
+		log.Fatalf("Error al abrir un canal: %s", err)
 	}
 	defer channelRabbitMQ.Close()
 
-	// Subscribing to QueueService1 for getting messages.
-	messages, err := channelRabbitMQ.Consume(
-		"QueueService1", // queue name
-		"",              // consumer
-		true,            // auto-ack
-		false,           // exclusive
-		false,           // no local
-		false,           // no wait
-		nil,             // arguments
+	// Configuración de la cola
+	q, err := channelRabbitMQ.QueueDeclare(
+		"QueueService1", // nombre de la cola
+		true,            // durabilidad
+		false,           // autoeliminación
+		false,           // exclusividad
+		false,           // no espera
+		nil,             // argumentos
 	)
 	if err != nil {
-		log.Println(err)
+		log.Fatalf("Error al declarar la cola: %s", err)
 	}
 
-	// Build a welcome message.
-	log.Println("Successfully connected to RabbitMQ")
-	log.Println("Waiting for messages")
+	// Consumir mensajes
+	msgs, err := channelRabbitMQ.Consume(
+		q.Name, // nombre de la cola
+		"",     // etiqueta del consumidor
+		true,   // autoack
+		false,  // exclusividad
+		false,  // no espera
+		false,  // no local
+		nil,    // argumentos
+	)
+	if err != nil {
+		log.Fatalf("Error al registrar el consumidor: %s", err)
+	}
 
-	// Make a channel to receive messages into infinite loop.
-	forever := make(chan bool)
-
-	go func() {
-		for message := range messages {
-			// For example, show received message in a console.
-			// TO-DO: Sender the data to process data container
-			log.Printf(" > Received message: %s\n", message.Body)
+	// Esperar por los mensajes
+	for msg := range msgs {
+		// Decodificar el JSON del mensaje
+		var data map[string]interface{}
+		if err := json.Unmarshal(msg.Body, &data); err != nil {
+			log.Printf("Error al decodificar el JSON: %s", err)
 		}
-	}()
+		// Procesar el mensaje
+		log.Printf("Mensaje recibido: %v", data)
 
-	<-forever
+		insertJsonToTable(data)
+		// Procesar el mensaje
+		log.Printf("Mensaje enviado: %v", data)
+	}
 }
