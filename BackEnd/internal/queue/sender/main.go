@@ -1,13 +1,23 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/streadway/amqp"
 )
+
+type Message struct {
+	Id        int     `json:"id"`
+	Temp      float32 `json:"temp"`
+	Timestamp int64   `json:"ts"`
+}
 
 func main() {
 	// Define RabbitMQ server URL.
@@ -31,7 +41,7 @@ func main() {
 
 	// With the instance and declare Queues that we can publish and subscribe to.
 	// TO-DO: Queues must be declare from xml or json.
-	_, err = channelRabbitMQ.QueueDeclare(
+	q, err := channelRabbitMQ.QueueDeclare(
 		"QueueService1", // queue name
 		true,            // durable
 		false,           // auto delete
@@ -54,22 +64,38 @@ func main() {
 	// Add route for send message to Service 1.
 	app.Get("/send", func(c *fiber.Ctx) error {
 		// Create a message to publish.
-		message := amqp.Publishing{
+		messageRcv := amqp.Publishing{
 			ContentType: "text/plain",
 			Body:        []byte(c.Query("msg")),
 		}
-
-		// Attempt to publish a message to the queue.
-		if err := channelRabbitMQ.Publish(
-			"",              // exchange
-			"QueueService1", // queue name
-			false,           // mandatory
-			false,           // immediate
-			message,         // message to publish
-		); err != nil {
-			return err
+		// Process msg received
+		valueStr := string(messageRcv.Body)
+		value, err := strconv.ParseFloat(valueStr, 32)
+		if err != nil {
+			fmt.Println("El string no es un float válido.")
 		}
 
+		// Create message in JSON format
+		message := Message{Id: 1, Temp: float32(value), Timestamp: time.Now().Unix()}
+		body, err := json.Marshal(message)
+		if err != nil {
+			log.Fatalf("Error al crear mensaje JSON: %v", err)
+		}
+
+		// Publicar mensaje en la cola
+		err = channelRabbitMQ.Publish(
+			"",     // Intercambio vacío
+			q.Name, // Nombre de la cola
+			false,  // No esperar confirmación
+			false,  // No requerir confirmación de mandatarios
+			amqp.Publishing{
+				ContentType: "application/json",
+				Body:        body,
+			},
+		)
+		if err != nil {
+			log.Fatalf("Error al publicar mensaje: %v", err)
+		}
 		return nil
 	})
 
