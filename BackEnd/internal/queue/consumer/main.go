@@ -1,36 +1,27 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"os"
 
 	_ "github.com/lib/pq"
+	query "github.com/ltovarm/Geoffrey_App/BackEnd/internal/query/queries"
 	"github.com/streadway/amqp"
 )
 
 func insertJsonToTable(data map[string]interface{}) {
 
-	sqlServerURL := os.Getenv("DATABASE_URL")
-	log.Println("sqlServerURL: %s", sqlServerURL)
 	// Set-up connection
-	db, err := sql.Open("postgres", sqlServerURL)
-	if err != nil {
-		log.Fatalf("Database connection error: %s", err)
+	my_db := query.NewDb()
+	if err := my_db.ConnectToDatabaseFromEnvVar(); err != nil {
+		log.Fatalf("Error connecting to db: %s\n", err)
 	}
-	defer db.Close()
-
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		log.Fatalf("Error when serializing the Json: %s", err)
-	}
-
 	// Insert into table
-	_, err = db.Exec("INSERT INTO temperatures (data) VALUES ($1)", jsonData)
-	if err != nil {
-		log.Fatalf("Error inserting into table: %s", err)
+	if err := my_db.SendDataAsJSON(data, "tempeatures"); err != nil {
+		log.Fatalf("Error inserting data to db: %s\n", err)
 	}
+
 }
 
 func main() {

@@ -23,9 +23,9 @@ services:
       context: .
       dockerfile: database/Dockerfile-sql
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: mysecretpassword
-      POSTGRES_DB: mydb
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
       DATABASE_URL: postgres://postgres:mysecretpassword@db_sql:5432/house?sslmode=disable
     restart: always
     networks:
