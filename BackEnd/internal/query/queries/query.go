@@ -25,6 +25,7 @@ func NewDb() *Database {
 }
 
 func (db *Database) ConnectToDatabaseFromEnvVar() error {
+
 	sqlServerURL := os.Getenv("DATABASE_URL")
 	// Connect to database
 	var err error
@@ -34,8 +35,6 @@ func (db *Database) ConnectToDatabaseFromEnvVar() error {
 	}
 
 	log.Printf("Connection to database successfully.")
-
-	defer db.DB.Close()
 
 	return err
 }
@@ -51,9 +50,11 @@ func (db *Database) ConnectToDatabase(user, pw, dbName, dbContainerName, port st
 
 	log.Printf("Connection to database %s successfully completed.", dbName)
 
-	defer db.DB.Close()
-
 	return err
+}
+
+func (db *Database) CloseDatabase() {
+	db.DB.Close()
 }
 
 func (db *Database) SendData(sqlTable string, parameters []string, values []string) (id int) {
@@ -88,65 +89,92 @@ func (db *Database) SendDataAsJSON(data map[string]interface{}, sqlTable string)
 
 	// Insert into table
 	query := fmt.Sprintf("INSERT INTO %s (data) VALUES ($1)", sqlTable)
+	log.Println(query)
 	_, err = db.DB.Exec(query, jsonData)
 	if err != nil {
 		log.Fatalf("Error inserting into table: %s", err)
+		return err
 	}
 
 	return nil
 }
 
-func (db *Database) GetXData(sqlTable string, numberOfData int) (map[string]interface{}, error) {
-	// Query to get the last row from the table
-	row := db.DB.QueryRow("SELECT data FROM "+sqlTable+" ORDER BY date DESC LIMIT %d", numberOfData)
+func (db *Database) GetXData(sqlTable string, numberOfData int) ([]map[string]interface{}, error) {
 
-	// Variables to store the JSONB data and to decode it into a map[string]interface{}
-	var jsonData []byte
-	data := make(map[string]interface{})
-
-	// Scan the data into the jsonData variable
-	err := row.Scan(&jsonData)
+	// Query to get all rows from the table
+	rows, err := db.DB.Query(fmt.Sprintf("SELECT data FROM %s ORDER BY id DESC LIMIT %d", sqlTable, numberOfData))
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	// Decode the JSONB data into the data map
-	err = json.Unmarshal(jsonData, &data)
-	if err != nil {
-		return nil, err
+	// Array to store the result
+	result := []map[string]interface{}{}
+
+	// Loop through each row and scan its data into a map
+	for rows.Next() {
+		var jsonData []byte
+		data := make(map[string]interface{})
+
+		err := rows.Scan(&jsonData)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal(jsonData, &data)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, data)
 	}
 
-	return data, nil
+	log.Println("Query successfully finished")
+
+	return result, nil
 }
 
-func (db *Database) GetLastData(sqlTable string, numberOfData int) (map[string]interface{}, error) {
+func (db *Database) GetLastData(sqlTable string) (map[string]interface{}, error) {
 
 	data, err := db.GetXData(sqlTable, 1)
 	if err != nil {
 		return nil, err
 	}
 
-	return data, err
+	return data[0], err
 }
 
-func (db *Database) GetAllData(parameters []string, sqlTable string) (row_output *sql.Rows, status int) {
+func (db *Database) GetAllData(parameters []string, sqlTable string) ([]map[string]interface{}, error) {
 
-	myFormattedParameters := "*"
-	if parameters != nil {
-		myFormattedParameters = strings.Join(parameters, ", ")
-	}
-
-	sqlStatement := fmt.Sprintf("SELECT COUNT(id) FROM %s;", sqlTable)
-	sqlStatement = fmt.Sprintf("SELECT %s FROM %s", myFormattedParameters, sqlTable)
-
-	// get data from table
-	var err error
-	row_output, err = db.DB.Query(sqlStatement)
+	// Query to get all rows from the table
+	rows, err := db.DB.Query(fmt.Sprintf("SELECT COUNT(id) FROM %s;", sqlTable))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	defer row_output.Close()
+	defer rows.Close()
+
+	// Array to store the result
+	result := []map[string]interface{}{}
+
+	// Loop through each row and scan its data into a map
+	for rows.Next() {
+		var jsonData []byte
+		data := make(map[string]interface{})
+
+		err := rows.Scan(&jsonData)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal(jsonData, &data)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, data)
+	}
 
 	log.Println("Query successfully finished")
-	return row_output, status
+
+	return result, nil
 }

@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/lib/pq"
 	query "github.com/ltovarm/Geoffrey_App/BackEnd/internal/query/queries"
+
 	"github.com/streadway/amqp"
 )
 
@@ -18,16 +19,16 @@ func insertJsonToTable(data map[string]interface{}) {
 		log.Fatalf("Error connecting to db: %s\n", err)
 	}
 	// Insert into table
-	if err := my_db.SendDataAsJSON(data, "tempeatures"); err != nil {
+	if err := my_db.SendDataAsJSON(data, "temperatures"); err != nil {
 		log.Fatalf("Error inserting data to db: %s\n", err)
 	}
-
+	my_db.CloseDatabase()
 }
 
 func main() {
 	// Define RabbitMQ server URL.
 	amqpServerURL := os.Getenv("AMQP_SERVER_URL")
-
+	amqpServerURL = "amqp://guest:guest@192.168.128.2:5672/"
 	// Create a new RabbitMQ connection.
 	connectRabbitMQ, err := amqp.Dial(amqpServerURL)
 	if err != nil {

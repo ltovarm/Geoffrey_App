@@ -1,8 +1,8 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"time"
 
 	query "github.com/ltovarm/Geoffrey_App/BackEnd/internal/query/queries"
 )
@@ -10,17 +10,25 @@ import (
 func main() {
 
 	my_db := query.NewDb()
-	if err := my_db.Connect_to_database("postgres", "mysecretpassword", "temp"); err != nil {
+	if err := my_db.ConnectToDatabaseFromEnvVar(); err != nil {
 		fmt.Printf("Error connecting to db: %v\n", err)
 		return
 	}
-	sqlTable := "temperature"
-	temp := 25.25
-	t := time.Now()
-	formattedTime := t.Format("2006-01-02 15:04:05")
-	var parameters [2]string
-	parameters = [2]string{"temperature", "date"}
+	sqlTable := "temperatures"
 
-	values := [2]string{fmt.Sprintf("%f", temp), formattedTime}
-	my_db.Send_data(sqlTable, parameters[:], values[:])
+	data, err := my_db.GetLastData(sqlTable)
+	if err != nil {
+		fmt.Printf("Error Get LastData to db: %v\n", err)
+		return
+	}
+
+	my_db.CloseDatabase()
+
+	jsonString, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error al serializar objeto a JSON: ", err)
+		return
+	}
+	fmt.Println(string(jsonString))
+
 }
