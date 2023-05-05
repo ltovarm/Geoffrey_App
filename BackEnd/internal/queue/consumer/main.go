@@ -5,13 +5,14 @@ import (
 	"log"
 	"os"
 
+	query "github.com/ltovarm/Geoffrey_App/tree/master/BackEnd/internal"
+
 	_ "github.com/lib/pq"
-	query "github.com/ltovarm/Geoffrey_App/BackEnd/internal/query/queries"
 
 	"github.com/streadway/amqp"
 )
 
-func insertJsonToTable(data map[string]interface{}) {
+func insertJsonToTable(data map[string]interface{}, sqltable string) {
 
 	// Set-up connection
 	my_db := query.NewDb()
@@ -19,7 +20,7 @@ func insertJsonToTable(data map[string]interface{}) {
 		log.Fatalf("Error connecting to db: %s\n", err)
 	}
 	// Insert into table
-	if err := my_db.SendDataAsJSON(data, "temperatures"); err != nil {
+	if err := my_db.SendDataAsJSON(data, sqltable); err != nil {
 		log.Fatalf("Error inserting data to db: %s\n", err)
 	}
 	my_db.CloseDatabase()
@@ -28,7 +29,6 @@ func insertJsonToTable(data map[string]interface{}) {
 func main() {
 	// Define RabbitMQ server URL.
 	amqpServerURL := os.Getenv("AMQP_SERVER_URL")
-	amqpServerURL = "amqp://guest:guest@192.168.128.2:5672/"
 	// Create a new RabbitMQ connection.
 	connectRabbitMQ, err := amqp.Dial(amqpServerURL)
 	if err != nil {
@@ -80,7 +80,7 @@ func main() {
 		// Procesar el mensaje
 		log.Printf("Mensaje recibido: %v", data)
 
-		insertJsonToTable(data)
+		insertJsonToTable(data, "temperatures")
 		// Procesar el mensaje
 		log.Printf("Mensaje enviado: %v", data)
 	}

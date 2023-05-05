@@ -4,7 +4,7 @@ FROM golang:1.20-alpine AS builder
 WORKDIR /build
 
 # Copy and download dependency using go mod.
-COPY ./queue/go.mod ./queue/go.sum ./
+COPY ./queue/consumer/go.mod ./queue/consumer/go.sum ./
 RUN go mod download
 
 # Copy the code into the container.
