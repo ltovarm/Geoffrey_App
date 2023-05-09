@@ -20,8 +20,8 @@ services:
     ports:
       - 5432:5432
     build:
-      context: .
-      dockerfile: ./database/Dockerfile-sql
+      context: ./../../
+      dockerfile: ./BackEnd/internal/database/Dockerfile-sql
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -38,8 +38,8 @@ services:
     ports:
       - 3000:3000
     build:
-      context: .
-      dockerfile: ./queue/sender/Dockerfile-sender
+      context: ./../../
+      dockerfile: ./BackEnd/internal/queue/sender/Dockerfile-sender
     environment:
       AMQP_SERVER_URL: amqp://guest:guest@message-broker:5672/
     restart: always
@@ -52,8 +52,8 @@ services:
   consumer:
     container_name: consumer
     build:
-      context: .
-      dockerfile: ./queue/consumer/Dockerfile-consumer
+      context: ./../../
+      dockerfile: ./BackEnd/internal/queue/consumer/Dockerfile-consumer
     environment:
       AMQP_SERVER_URL: amqp://guest:guest@message-broker:5672/
       DATABASE_URL: postgres://postgres:mysecretpassword@db_sql:5432/house?sslmode=disable
