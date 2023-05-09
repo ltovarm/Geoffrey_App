@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	query "github.com/ltovarm/Geoffrey_App/tree/master/BackEnd/internal"
+	query "github.com/ltovarm/Geoffrey_App/BackEnd/internal/query"
 
 	_ "github.com/lib/pq"
 
