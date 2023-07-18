@@ -47,7 +47,6 @@ services:
       - dev-network
     depends_on:
       - message-broker
-
   # Create service with message consumer.
   consumer:
     container_name: consumer
@@ -66,8 +65,7 @@ services:
       - sender
       - message-broker
       - db_sql
-
-# Necesito saber mas sobre este punto.
+  # Necesito saber mas sobre este punto.
 networks:
   # Create a new Docker network.
   dev-network:
