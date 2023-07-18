@@ -8,10 +8,12 @@ COPY ./go.mod ./go.sum ./
 RUN go mod download
 
 # Copy the code into the container.
-COPY ./queue/consumer/main.go .
+COPY ./BackEnd/internal/queue/consumer/main.go .
+# COPY ./BackEnd/internal/query/query.go .
 
 # Set necessary environment variables needed for our image and build the consumer.
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+# RUN go get github.com/ltovarm/Geoffrey_App/BackEnd/internal/query
 RUN go build -ldflags="-s -w" -o consumer .
 
 FROM scratch
